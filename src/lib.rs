@@ -9,8 +9,17 @@
 //! - [`bytes`]: bounds-checked reading of untrusted input
 //! - [`text`]: UTF-16 decoding that never loses information
 //! - [`win`]: Windows SIDs and GUIDs
+//! - [`checksum`]: CRC-32 and CRC-32C
+//! - [`sha256`]: SHA-256 for evidence hashing
+//! - [`json`]: JSON values, output and a strict parser
+//!
+//! Written from scratch with no dependencies, so it builds everywhere
+//! (including `wasm32`) and carries no third-party licence obligations.
 
 pub mod bytes;
+pub mod checksum;
+pub mod json;
+pub mod sha256;
 pub mod text;
 pub mod time;
 pub mod win;

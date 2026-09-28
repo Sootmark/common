@@ -8,10 +8,13 @@ Shared helpers for Sootmark parsers. A toolbox, not a contract: parsers use it i
 | `bytes` | A bounds-checked reader for untrusted input. Never panics; every error carries the absolute offset. `checked_count` caps allocations driven by input values. |
 | `text` | UTF-16LE decoding that never loses information: unpaired surrogates and odd bytes are escaped, not replaced. |
 | `win` | Windows SIDs and GUIDs, plus well-known SID names. |
+| `checksum` | CRC-32 (IEEE) and CRC-32C (Castagnoli), streaming. |
+| `sha256` | SHA-256 (FIPS 180-4), streaming, `io::Write` for `io::copy`; checked against the NIST vectors. |
+| `json` | A JSON value type, compact and pretty output, and a strict RFC 8259 parser with a nesting limit for untrusted input. |
 
 ## Guarantees
 
-- No runtime dependencies. Builds for `wasm32-unknown-unknown`.
+- Written from scratch, no dependencies: nothing to license, nothing to audit but this code. Builds for `wasm32-unknown-unknown`.
 - `#![forbid(unsafe_code)]`, `clippy::pedantic` clean.
 - Property tests: calendar round-trips, lossless FILETIME, and no panics on arbitrary input.
 
@@ -19,7 +22,7 @@ Shared helpers for Sootmark parsers. A toolbox, not a contract: parsers use it i
 
 ```toml
 [dependencies]
-common = { git = "https://github.com/Sootmark/common", tag = "v0.1.0" }
+common = { git = "https://github.com/Sootmark/common", tag = "v0.2.0" }
 ```
 
 ```rust
