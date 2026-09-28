@@ -52,6 +52,35 @@ impl Json {
         }
     }
 
+    /// The number, if this is an integer that fits an `i64`.
+    #[must_use]
+    pub fn as_i64(&self) -> Option<i64> {
+        match *self {
+            Self::Int(n) => Some(n),
+            Self::UInt(n) => i64::try_from(n).ok(),
+            _ => None,
+        }
+    }
+
+    /// The number, if this is a non-negative integer.
+    #[must_use]
+    pub fn as_u64(&self) -> Option<u64> {
+        match *self {
+            Self::Int(n) => u64::try_from(n).ok(),
+            Self::UInt(n) => Some(n),
+            _ => None,
+        }
+    }
+
+    /// The elements, if this is an array.
+    #[must_use]
+    pub fn as_array(&self) -> Option<&[Json]> {
+        match self {
+            Self::Array(items) => Some(items),
+            _ => None,
+        }
+    }
+
     /// Indented output, two spaces per level.
     #[must_use]
     pub fn to_pretty(&self) -> String {
@@ -447,6 +476,25 @@ impl Parser<'_> {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn typed_accessors() {
+        let value =
+            parse(r#"{"n": -3, "big": 18446744073709551615, "list": [1, "a"], "s": "x"}"#).unwrap();
+        assert_eq!(value.get("n").and_then(Json::as_i64), Some(-3));
+        assert_eq!(value.get("n").and_then(Json::as_u64), None);
+        assert_eq!(value.get("big").and_then(Json::as_u64), Some(u64::MAX));
+        assert_eq!(value.get("big").and_then(Json::as_i64), None);
+        assert_eq!(
+            value
+                .get("list")
+                .and_then(Json::as_array)
+                .map(<[Json]>::len),
+            Some(2)
+        );
+        assert_eq!(value.get("s").and_then(Json::as_array), None);
+        assert_eq!(value.get("s").and_then(Json::as_i64), None);
+    }
     use super::*;
     use proptest::prelude::*;
 
