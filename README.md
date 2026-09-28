@@ -29,7 +29,7 @@ common = { git = "https://github.com/Sootmark/common", tag = "v0.3.0" }
 ```
 
 ```rust
-use common::time::Ts;
+use sootmark_common::time::Ts;
 
 let ts = Ts::from_filetime(125_911_584_000_000_000);
 assert_eq!(ts.to_string(), "2000-01-01T00:00:00.0000000Z");

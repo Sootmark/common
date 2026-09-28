@@ -1,12 +1,15 @@
 [package]
-name = "common"
-version = "0.3.1"
+name = "sootmark-common"
+version = "0.3.2"
 edition = "2021"
 rust-version = "1.80"
-description = "Shared helpers for Sootmark parsers: timestamps, bounded byte reading, UTF-16 text, Windows SIDs and GUIDs."
+description = "Zero-dependency helpers for Sootmark forensic parsers: timestamps, bounded byte reading, UTF-16 text, Windows SIDs and GUIDs, CRC-32/32C, Adler-32, MD5, SHA-1, SHA-256, JSON and DEFLATE."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Sootmark/common"
-publish = false
+homepage = "https://sootmark.com"
+keywords = ["forensics", "dfir", "incident-response"]
+# Sources only: test fixtures (disk images, logs, test keys) stay in the repository.
+include = ["/src", "/README.md", "/LICENSE-APACHE", "/LICENSE-MIT"]
 
 # No runtime dependencies on purpose: builds everywhere, including wasm32.
 [dependencies]

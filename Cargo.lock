@@ -36,13 +36,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
-name = "common"
-version = "0.3.1"
-dependencies = [
- "proptest",
-]
-
-[[package]]
 name = "errno"
 version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -245,6 +238,13 @@ dependencies = [
  "quick-error",
  "tempfile",
  "wait-timeout",
+]
+
+[[package]]
+name = "sootmark-common"
+version = "0.3.2"
+dependencies = [
+ "proptest",
 ]
 
 [[package]]

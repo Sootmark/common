@@ -131,7 +131,7 @@ impl Ts {
     /// [`Semantic::Sentinel`]; other values above `i64::MAX` are invalid.
     ///
     /// ```
-    /// use common::time::{Semantic, Ts};
+    /// use sootmark_common::time::{Semantic, Ts};
     ///
     /// let ts = Ts::from_filetime(125_911_584_000_000_000);
     /// assert_eq!(ts.to_string(), "2000-01-01T00:00:00.0000000Z");
