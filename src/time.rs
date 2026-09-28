@@ -89,6 +89,18 @@ impl Ts {
         }
     }
 
+    /// A wall-clock time in an unknown time zone, from canonical ticks
+    /// counted as if the wall clock were UTC (e.g. a log line's local time).
+    /// Convert with [`Ts::assume_offset`] once the zone is known.
+    #[must_use]
+    pub const fn from_local_ticks(ticks: i64, precision: Precision) -> Self {
+        Self {
+            ticks,
+            precision,
+            semantic: Semantic::LocalUnknownZone,
+        }
+    }
+
     const fn special(semantic: Semantic, precision: Precision) -> Self {
         Self {
             ticks: 0,
@@ -398,6 +410,22 @@ fn days_in_month(year: i64, month: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn local_ticks_stay_local_until_an_offset_is_known() {
+        let local = Ts::from_local_ticks(TICKS_PER_DAY, Precision::Tick);
+        assert_eq!(local.semantic(), Semantic::LocalUnknownZone);
+        assert_eq!(
+            local.to_iso8601().as_deref(),
+            Some("1970-01-02T00:00:00.0000000")
+        );
+        let utc = local.assume_offset(60);
+        assert_eq!(utc.semantic(), Semantic::Utc);
+        assert_eq!(
+            utc.to_iso8601().as_deref(),
+            Some("1970-01-01T23:00:00.0000000Z")
+        );
+    }
     use super::*;
     use proptest::prelude::*;
 
