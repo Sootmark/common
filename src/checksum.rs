@@ -2,6 +2,7 @@
 //!
 //! - [`Crc32`]: the IEEE 802.3 polynomial (zip, EVTX, PNG, …).
 //! - [`Crc32c`]: the Castagnoli polynomial (VHDX, iSCSI, …).
+//! - [`adler32`]: the zlib checksum (E01, zlib streams).
 
 /// Reflected IEEE 802.3 polynomial.
 const IEEE: u32 = 0xedb8_8320;
@@ -90,6 +91,26 @@ crc!(
     CASTAGNOLI_TABLE
 );
 
+/// Largest prime below 2^16.
+const ADLER_MODULUS: u32 = 65_521;
+/// Bytes that can be summed before the sums must be reduced (no overflow).
+const ADLER_BLOCK: usize = 5_552;
+
+/// Adler-32 (RFC 1950) of `data`.
+#[must_use]
+pub fn adler32(data: &[u8]) -> u32 {
+    let (mut a, mut b) = (1u32, 0u32);
+    for block in data.chunks(ADLER_BLOCK) {
+        for &byte in block {
+            a += u32::from(byte);
+            b += a;
+        }
+        a %= ADLER_MODULUS;
+        b %= ADLER_MODULUS;
+    }
+    (b << 16) | a
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -100,6 +121,8 @@ mod tests {
         assert_eq!(Crc32::of(b"123456789"), 0xcbf4_3926);
         assert_eq!(Crc32c::of(b"123456789"), 0xe306_9283);
         assert_eq!(Crc32::of(b""), 0);
+        assert_eq!(adler32(b"Wikipedia"), 0x11e6_0398);
+        assert_eq!(adler32(b""), 1);
     }
 
     proptest! {

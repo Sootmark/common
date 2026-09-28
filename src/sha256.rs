@@ -5,7 +5,7 @@
 
 use std::io;
 
-const BLOCK: usize = 64;
+use crate::blocks::{Blocks, LengthOrder};
 
 /// Round constants: the first 32 bits of the fractional parts of the cube
 /// roots of the first 64 primes.
@@ -94,9 +94,7 @@ const H0: [u32; 8] = [
 #[derive(Debug, Clone)]
 pub struct Sha256 {
     state: [u32; 8],
-    buffer: [u8; BLOCK],
-    buffered: usize,
-    length: u64,
+    blocks: Blocks,
 }
 
 impl Default for Sha256 {
@@ -111,45 +109,23 @@ impl Sha256 {
     pub const fn new() -> Self {
         Self {
             state: H0,
-            buffer: [0; BLOCK],
-            buffered: 0,
-            length: 0,
+            blocks: Blocks::new(),
         }
     }
 
     /// Add `data`.
-    pub fn update(&mut self, mut data: &[u8]) {
-        self.length = self.length.wrapping_add(data.len() as u64);
-        if self.buffered > 0 {
-            let take = (BLOCK - self.buffered).min(data.len());
-            self.buffer[self.buffered..self.buffered + take].copy_from_slice(&data[..take]);
-            self.buffered += take;
-            data = &data[take..];
-            if self.buffered < BLOCK {
-                return;
-            }
-            let block = self.buffer;
-            self.compress(&block);
-            self.buffered = 0;
-        }
-        let mut blocks = data.chunks_exact(BLOCK);
-        for block in &mut blocks {
-            self.compress(block);
-        }
-        let rest = blocks.remainder();
-        self.buffer[..rest.len()].copy_from_slice(rest);
-        self.buffered = rest.len();
+    pub fn update(&mut self, data: &[u8]) {
+        let state = &mut self.state;
+        self.blocks
+            .update(data, &mut |block| compress(state, block));
     }
 
     /// The digest of everything added.
     #[must_use]
     pub fn finalize(mut self) -> [u8; 32] {
-        let bit_length = self.length.wrapping_mul(8);
-        self.update(&[0x80]);
-        while self.buffered != BLOCK - 8 {
-            self.update(&[0]);
-        }
-        self.update(&bit_length.to_be_bytes());
+        let state = &mut self.state;
+        self.blocks
+            .finish(LengthOrder::Big, &mut |block| compress(state, block));
         let mut digest = [0u8; 32];
         for (chunk, word) in digest.chunks_exact_mut(4).zip(self.state) {
             chunk.copy_from_slice(&word.to_be_bytes());
@@ -164,40 +140,40 @@ impl Sha256 {
         hasher.update(data);
         hasher.finalize()
     }
+}
 
-    /// Process one 64-byte block. Variable names follow FIPS 180-4 §6.2.2
-    /// so the code can be checked line by line against the standard.
-    #[allow(clippy::many_single_char_names)]
-    fn compress(&mut self, block: &[u8]) {
-        let mut w = [0u32; 64];
-        for (word, b) in w.iter_mut().zip(block.chunks_exact(4)) {
-            *word = u32::from_be_bytes([b[0], b[1], b[2], b[3]]);
-        }
-        for i in 16..64 {
-            let s0 = w[i - 15].rotate_right(7) ^ w[i - 15].rotate_right(18) ^ (w[i - 15] >> 3);
-            let s1 = w[i - 2].rotate_right(17) ^ w[i - 2].rotate_right(19) ^ (w[i - 2] >> 10);
-            w[i] = w[i - 16]
-                .wrapping_add(s0)
-                .wrapping_add(w[i - 7])
-                .wrapping_add(s1);
-        }
-        let [mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h] = self.state;
-        for i in 0..64 {
-            let s1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
-            let choice = (e & f) ^ (!e & g);
-            let t1 = h
-                .wrapping_add(s1)
-                .wrapping_add(choice)
-                .wrapping_add(K[i])
-                .wrapping_add(w[i]);
-            let s0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
-            let majority = (a & b) ^ (a & c) ^ (b & c);
-            let t2 = s0.wrapping_add(majority);
-            (h, g, f, e, d, c, b, a) = (g, f, e, d.wrapping_add(t1), c, b, a, t1.wrapping_add(t2));
-        }
-        for (state, value) in self.state.iter_mut().zip([a, b, c, d, e, f, g, h]) {
-            *state = state.wrapping_add(value);
-        }
+/// Process one 64-byte block. Variable names follow FIPS 180-4 §6.2.2
+/// so the code can be checked line by line against the standard.
+#[allow(clippy::many_single_char_names)]
+fn compress(state: &mut [u32; 8], block: &[u8]) {
+    let mut w = [0u32; 64];
+    for (word, b) in w.iter_mut().zip(block.chunks_exact(4)) {
+        *word = u32::from_be_bytes([b[0], b[1], b[2], b[3]]);
+    }
+    for i in 16..64 {
+        let s0 = w[i - 15].rotate_right(7) ^ w[i - 15].rotate_right(18) ^ (w[i - 15] >> 3);
+        let s1 = w[i - 2].rotate_right(17) ^ w[i - 2].rotate_right(19) ^ (w[i - 2] >> 10);
+        w[i] = w[i - 16]
+            .wrapping_add(s0)
+            .wrapping_add(w[i - 7])
+            .wrapping_add(s1);
+    }
+    let [mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h] = *state;
+    for i in 0..64 {
+        let s1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
+        let choice = (e & f) ^ (!e & g);
+        let t1 = h
+            .wrapping_add(s1)
+            .wrapping_add(choice)
+            .wrapping_add(K[i])
+            .wrapping_add(w[i]);
+        let s0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
+        let majority = (a & b) ^ (a & c) ^ (b & c);
+        let t2 = s0.wrapping_add(majority);
+        (h, g, f, e, d, c, b, a) = (g, f, e, d.wrapping_add(t1), c, b, a, t1.wrapping_add(t2));
+    }
+    for (word, value) in state.iter_mut().zip([a, b, c, d, e, f, g, h]) {
+        *word = word.wrapping_add(value);
     }
 }
 
