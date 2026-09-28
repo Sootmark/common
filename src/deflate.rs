@@ -83,6 +83,13 @@ impl<R: Read> Inflate<R> {
         }
     }
 
+    /// The compressed input. The decoder reads ahead, so its position is
+    /// past what has been decoded; use this to finish reading a framed
+    /// input (e.g. check a trailer) once decoding is done.
+    pub fn get_mut(&mut self) -> &mut R {
+        &mut self.bits.inner
+    }
+
     fn emit(&mut self, byte: u8, out: &mut [u8], written: &mut usize) {
         self.window[self.window_position] = byte;
         self.window_position = (self.window_position + 1) % WINDOW_SIZE;
