@@ -8,12 +8,13 @@ Shared helpers for Sootmark parsers. A toolbox, not a contract: parsers use it i
 | `bytes` | A bounds-checked reader for untrusted input. Never panics; every error carries the absolute offset. `checked_count` caps allocations driven by input values. |
 | `text` | UTF-16LE decoding that never loses information: unpaired surrogates and odd bytes are escaped, not replaced. |
 | `win` | Windows SIDs and GUIDs, plus well-known SID names. |
-| `checksum` | CRC-32 (IEEE) and CRC-32C (Castagnoli), streaming; Adler-32. |
+| `checksum` | CRC-32 (IEEE) and CRC-32C (Castagnoli), streaming; Adler-32; XXH64. |
 | `sha256` | SHA-256 (FIPS 180-4), streaming, `io::Write` for `io::copy`; checked against the NIST vectors. |
 | `md5`, `sha1` | Legacy digests (RFC 1321, FIPS 180-4) for E01 embedded hashes and reports; checked against the published test suites. Never used alone for integrity decisions. |
 | `hex` | Lowercase hex encoding. |
 | `deflate` | DEFLATE (RFC 1951) and Deflate64 decompression, streaming; zlib (RFC 1950) with Adler-32 verification and an output limit. |
 | `gzip` | gzip (RFC 1952) decompression, streaming: every member in a row, each one's CRC-32 and length checked. |
+| `zstd` | Zstandard (RFC 8878) decompression with an output limit: every frame in a row, skippable frames passed over, content size and XXH64 checksum checked. No dictionaries. Checked against the reference `zstd` CLI. |
 | `json` | A JSON value type, compact and pretty output, and a strict RFC 8259 parser with a nesting limit for untrusted input. |
 
 ## Guarantees

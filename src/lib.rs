@@ -9,11 +9,13 @@
 //! - [`bytes`]: bounds-checked reading of untrusted input
 //! - [`text`]: UTF-16 decoding that never loses information
 //! - [`win`]: Windows SIDs and GUIDs
-//! - [`checksum`]: CRC-32 and CRC-32C
+//! - [`checksum`]: CRC-32, CRC-32C, Adler-32 and XXH64
 //! - [`sha256`]: SHA-256 for evidence hashing
 //! - [`md5`], [`sha1`]: legacy digests embedded in E01 images and cited in reports
 //! - [`hex`]: lowercase hex encoding
 //! - [`deflate`]: DEFLATE/Deflate64 and zlib decompression
+//! - [`gzip`]: gzip decompression
+//! - [`zstd`]: Zstandard decompression
 //! - [`json`]: JSON values, output and a strict parser
 //!
 //! Written from scratch with no dependencies, so it builds everywhere
@@ -32,3 +34,4 @@ pub mod sha256;
 pub mod text;
 pub mod time;
 pub mod win;
+pub mod zstd;

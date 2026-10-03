@@ -79,6 +79,12 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
+impl From<Error> for std::io::Error {
+    fn from(error: Error) -> Self {
+        Self::new(std::io::ErrorKind::InvalidData, error)
+    }
+}
+
 /// Result alias for this module.
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -275,6 +281,14 @@ pub fn checked_count(
         return Err(too_many());
     }
     usize::try_from(count).map_err(|_| too_many())
+}
+
+/// Up to 8 bytes as a little-endian integer.
+pub(crate) fn le_u64(bytes: &[u8]) -> u64 {
+    bytes
+        .iter()
+        .rev()
+        .fold(0, |value, &byte| value << 8 | u64::from(byte))
 }
 
 /// How many `elem_size`-byte elements fit in `available` bytes.
