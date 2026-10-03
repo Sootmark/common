@@ -13,6 +13,7 @@ Shared helpers for Sootmark parsers. A toolbox, not a contract: parsers use it i
 | `md5`, `sha1` | Legacy digests (RFC 1321, FIPS 180-4) for E01 embedded hashes and reports; checked against the published test suites. Never used alone for integrity decisions. |
 | `hex` | Lowercase hex encoding. |
 | `deflate` | DEFLATE (RFC 1951) and Deflate64 decompression, streaming; zlib (RFC 1950) with Adler-32 verification and an output limit. |
+| `gzip` | gzip (RFC 1952) decompression, streaming: every member in a row, each one's CRC-32 and length checked. |
 | `json` | A JSON value type, compact and pretty output, and a strict RFC 8259 parser with a nesting limit for untrusted input. |
 
 ## Guarantees

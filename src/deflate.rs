@@ -90,6 +90,22 @@ impl<R: Read> Inflate<R> {
         &mut self.bits.inner
     }
 
+    /// Once decoding is done: the input read past the end of the
+    /// compressed data (a trailer, a next member, …), then the input
+    /// itself, positioned after it.
+    pub fn into_rest(mut self) -> (Vec<u8>, R) {
+        self.bits.align_to_byte();
+        let mut rest = Vec::new();
+        while self.bits.count >= 8 {
+            rest.push(self.bits.bits as u8);
+            self.bits.consume(8);
+        }
+        rest.extend_from_slice(
+            &self.bits.buffer[self.bits.buffer_position..self.bits.buffer_length],
+        );
+        (rest, self.bits.inner)
+    }
+
     fn emit(&mut self, byte: u8, out: &mut [u8], written: &mut usize) {
         self.window[self.window_position] = byte;
         self.window_position = (self.window_position + 1) % WINDOW_SIZE;

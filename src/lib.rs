@@ -23,6 +23,7 @@ mod blocks;
 pub mod bytes;
 pub mod checksum;
 pub mod deflate;
+pub mod gzip;
 pub mod hex;
 pub mod json;
 pub mod md5;
