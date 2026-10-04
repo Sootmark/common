@@ -242,7 +242,7 @@ dependencies = [
 
 [[package]]
 name = "sootmark-common"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "proptest",
 ]

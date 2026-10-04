@@ -357,6 +357,51 @@ impl Ts {
     }
 }
 
+impl Ts {
+    /// A UTC time from `YYYY-MM-DDTHH:MM:SS[.fffffff]Z`, as [`Ts::to_iso8601`]
+    /// writes UTC times (and as .NET's round-trip format does): up to seven
+    /// fraction digits. `None` for anything else, including dates that don't
+    /// exist (February 30).
+    #[must_use]
+    pub fn parse_iso8601_utc(text: &str) -> Option<Self> {
+        let (date, time) = text.strip_suffix('Z')?.split_once('T')?;
+        let field = |text: &str, digits: usize| -> Option<i64> {
+            (text.len() == digits && text.bytes().all(|b| b.is_ascii_digit()))
+                .then(|| text.parse().ok())?
+        };
+        let mut date = date.split('-');
+        let year = field(date.next()?, 4)?;
+        let month = field(date.next()?, 2)?;
+        let day = field(date.next()?, 2)?;
+        let (clock, fraction) = time.split_once('.').unwrap_or((time, ""));
+        let mut clock = clock.split(':');
+        let hour = field(clock.next()?, 2)?;
+        let minute = field(clock.next()?, 2)?;
+        let second = field(clock.next()?, 2)?;
+        let extra = date.next().is_some() || clock.next().is_some();
+        let fraction_ok = fraction.len() <= 7 && fraction.bytes().all(|b| b.is_ascii_digit());
+        if extra
+            || !fraction_ok
+            || hour > 23
+            || minute > 59
+            || second > 59
+            || !(1..=12).contains(&month)
+        {
+            return None;
+        }
+        let days = days_from_civil(year, month as u32, day as u32);
+        if civil_from_days(days) != (year, month as u32, day as u32) {
+            return None;
+        }
+        let fraction: i64 = format!("{fraction:0<7}").parse().ok()?;
+        let seconds = days * 86_400 + hour * 3600 + minute * 60 + second;
+        Some(Self::from_ticks(
+            seconds * TICKS_PER_SECOND + fraction,
+            Precision::Tick,
+        ))
+    }
+}
+
 impl fmt::Display for Ts {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.to_iso8601() {
@@ -427,6 +472,40 @@ mod tests {
         );
     }
     use super::*;
+
+    #[test]
+    fn utc_iso8601_round_trips() {
+        for text in [
+            "2026-10-04T02:50:15.7399480Z",
+            "1970-01-01T00:00:01.0000000Z",
+            "2024-02-29T23:59:59.0000001Z",
+        ] {
+            assert_eq!(
+                Ts::parse_iso8601_utc(text).unwrap().to_iso8601().unwrap(),
+                text
+            );
+        }
+        assert_eq!(
+            Ts::parse_iso8601_utc("2026-10-04T08:15:30Z")
+                .unwrap()
+                .to_iso8601()
+                .unwrap(),
+            "2026-10-04T08:15:30.0000000Z"
+        );
+        for bad in [
+            "2026-10-04T08:15:30",
+            "2026-13-04T08:15:30Z",
+            "2026-02-30T08:15:30Z",
+            "2026-10-04T24:00:00Z",
+            "2026-10-04T08:15:30.12345678Z",
+            "26-10-04T08:15:30Z",
+            "2026-10-04T08:15Z",
+            "2026-10-04T08:15:30+02:00",
+            "x",
+        ] {
+            assert_eq!(Ts::parse_iso8601_utc(bad), None, "{bad}");
+        }
+    }
     use proptest::prelude::*;
 
     fn iso(ts: Ts) -> String {

@@ -1,6 +1,6 @@
 [package]
 name = "sootmark-common"
-version = "0.3.6"
+version = "0.3.7"
 edition = "2021"
 rust-version = "1.80"
 description = "Zero-dependency helpers for Sootmark forensic parsers: timestamps, bounded byte reading, UTF-16 text, Windows SIDs and GUIDs, CRC-32/32C, Adler-32, XXH64, MD5, SHA-1, SHA-256, JSON, and DEFLATE, gzip and Zstandard decompression."
